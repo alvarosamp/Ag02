@@ -1,0 +1,17 @@
+Amostras: 440 | Treino: 352 | Teste: 88
+Acurácia: 93.1818%
+Baseline (classe majoritária): 68.1818%
+
+              precision    recall  f1-score   support
+
+      HoReCa     0.9500    0.9500    0.9500        60
+      Retail     0.8929    0.8929    0.8929        28
+
+    accuracy                         0.9318        88
+   macro avg     0.9214    0.9214    0.9214        88
+weighted avg     0.9318    0.9318    0.9318        88
+
+Matriz de confusão (linhas=reais; colunas=previstas):
+Ordem: HoReCa, Retail
+[[57  3]
+ [ 3 25]]

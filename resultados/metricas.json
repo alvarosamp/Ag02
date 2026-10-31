@@ -1,0 +1,64 @@
+{
+  "amostras": 440,
+  "treino": 352,
+  "teste": 88,
+  "random_state": 42,
+  "acuracia": 0.9318181818181818,
+  "baseline_majoritaria": 0.6818181818181818,
+  "ordem_classes": [
+    "HoReCa",
+    "Retail"
+  ],
+  "matriz_confusao": [
+    [
+      57,
+      3
+    ],
+    [
+      3,
+      25
+    ]
+  ],
+  "parametros": {
+    "ccp_alpha": 0.0,
+    "class_weight": null,
+    "criterion": "gini",
+    "max_depth": 4,
+    "max_features": null,
+    "max_leaf_nodes": null,
+    "min_impurity_decrease": 0.0,
+    "min_samples_leaf": 5,
+    "min_samples_split": 2,
+    "min_weight_fraction_leaf": 0.0,
+    "monotonic_cst": null,
+    "random_state": 42,
+    "splitter": "best"
+  },
+  "classification_report": {
+    "HoReCa": {
+      "precision": 0.95,
+      "recall": 0.95,
+      "f1-score": 0.95,
+      "support": 60.0
+    },
+    "Retail": {
+      "precision": 0.8928571428571429,
+      "recall": 0.8928571428571429,
+      "f1-score": 0.8928571428571429,
+      "support": 28.0
+    },
+    "accuracy": 0.9318181818181818,
+    "macro avg": {
+      "precision": 0.9214285714285715,
+      "recall": 0.9214285714285715,
+      "f1-score": 0.9214285714285715,
+      "support": 88.0
+    },
+    "weighted avg": {
+      "precision": 0.9318181818181818,
+      "recall": 0.9318181818181818,
+      "f1-score": 0.9318181818181818,
+      "support": 88.0
+    }
+  }
+}
