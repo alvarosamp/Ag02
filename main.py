@@ -1,6 +1,7 @@
 """AG2: treinamento, avaliação e classificação de canais de vendas."""
 import argparse
 import json
+import sys
 from pathlib import Path
 
 import joblib
@@ -30,7 +31,8 @@ def carregar_dados(caminho):
     for coluna, mapa in [('Channel', CHANNELS), ('Region', REGIONS)]:
         if not df[coluna].isin(mapa).all():
             raise ValueError(f'Valores desconhecidos em {coluna}: use {list(mapa)}.')
-        df[coluna] = df[coluna].replace(mapa).astype('int64')
+        with pd.option_context('future.no_silent_downcasting', True):
+            df[coluna] = df[coluna].replace(mapa).astype('int64')
     for coluna in FEATURES[1:]:
         valores = pd.to_numeric(df[coluna], errors='raise')
         if not (np.isfinite(valores) & (valores >= 0) & (valores % 1 == 0)
@@ -93,28 +95,77 @@ def treinar(caminho, saida):
     return modelo
 
 
-def interagir(modelo):
-    print('Classificar novo cliente. Região: 0=Lisbon, 1=Oporto, 2=Other.')
-    print('Gastos anuais em unidades monetárias, inteiros não negativos.')
+class Saida(Exception):
+    """Usuário pediu para encerrar a entrada interativa."""
+
+
+def perguntar(texto):
+    resposta = input(texto).strip()
+    if resposta.lower() in ('sair', 'q'):
+        raise Saida
+    return resposta
+
+
+def ler_regiao():
+    nomes = {nome.lower(): codigo for nome, codigo in REGIONS.items()}
     while True:
+        resposta = perguntar('Region [0=Lisbon, 1=Oporto, 2=Other]: ').lower()
+        if resposta in nomes:
+            return nomes[resposta]
+        if resposta in ('0', '1', '2'):
+            return int(resposta)
+        print('  Valor inválido: digite 0, 1, 2 ou o nome (Lisbon, Oporto, Other).')
+
+
+def ler_gasto(coluna):
+    while True:
+        resposta = perguntar(f'{coluna} (gasto anual em u.m.): ')
         try:
-            valores = [int(input(f'{coluna}: ')) for coluna in FEATURES]
-            entrada = criar_entrada(valores)
-        except ValueError as erro:
-            print(f'Entrada inválida: {erro} Tente novamente.\n')
+            valor = int(resposta)
+        except ValueError:
+            print('  Valor inválido: digite um inteiro sem separadores, ex.: 10000.')
             continue
-        except (EOFError, KeyboardInterrupt):
-            print('\nEncerrado.')
-            break
-        print(f'Canal previsto: {LABELS[int(modelo.predict(entrada)[0])]}')
-        try:
-            if input('Classificar outro cliente? [s/N]: ').strip().lower() != 's':
+        if not 0 <= valor < 2**63:
+            print('  Valor inválido: o gasto não pode ser negativo.')
+            continue
+        return valor
+
+
+def coletar_cliente():
+    """Pergunta cada atributo; um erro repete só a pergunta afetada."""
+    return [ler_regiao()] + [ler_gasto(coluna) for coluna in FEATURES[1:]]
+
+
+def mostrar_previsao(modelo, valores):
+    entrada = criar_entrada(valores)
+    indice = int(modelo.predict(entrada)[0])
+    confianca = modelo.predict_proba(entrada)[0][list(modelo.classes_).index(indice)]
+    print('\nResumo do cliente:')
+    for coluna, valor in zip(FEATURES, valores):
+        exibido = f'{valor} ({list(REGIONS)[valor]})' if coluna == 'Region' else valor
+        print(f'  {coluna:<17} {exibido}')
+    print(f'\nCanal previsto: {LABELS[indice]} (confiança do modelo: {confianca:.0%})\n')
+
+
+def interagir(modelo):
+    print('\n=== Classificação de novo cliente ===')
+    print('Digite "sair" a qualquer momento para encerrar.\n')
+    try:
+        while True:
+            mostrar_previsao(modelo, coletar_cliente())
+            if perguntar('Classificar outro cliente? [s/N]: ').lower() not in ('s', 'sim'):
                 break
-        except (EOFError, KeyboardInterrupt):
-            break
+            print()
+    except (Saida, EOFError, KeyboardInterrupt):
+        pass
+    print('\nEncerrado.')
 
 
 def main():
+    # Evita caracteres quebrados em consoles que não usam UTF-8 (ex.: Windows).
+    for fluxo in (sys.stdout, sys.stderr):
+        if hasattr(fluxo, 'reconfigure'):
+            fluxo.reconfigure(encoding='utf-8', errors='replace')
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dados', type=Path, default=BASE / 'dados' / 'wholesale.csv')
     parser.add_argument('--saida', type=Path, default=BASE / 'resultados')

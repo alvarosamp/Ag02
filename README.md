@@ -1,42 +1,66 @@
 # AG2 - Classificação de canais de vendas
 
 Projeto da atividade de Engenharias de Computação e Software do Inatel.
-Classifica clientes em **HoReCa** (hotel, restaurante ou café) ou **Retail** (varejo), usando uma árvore de decisão e sete atributos do conjunto Wholesale customers.
+Classifica clientes em **HoReCa** (hotel, restaurante ou café) ou **Retail** (varejo), usando o modelo **Decision Tree (árvore de decisão)** e sete atributos do conjunto Wholesale customers.
 
 ## Executar
 
-Requer Python 3.11 ou superior. Validado com Python 3.14, pandas 3.0.3 e scikit-learn 1.8.0.
-Clone o repositório (ou extraia o ZIP) e abra o terminal na pasta que contém `main.py`.
+**Requisito:** Python 3.11 ou superior (validado com Python 3.14, pandas 3.0.3 e scikit-learn 1.8.0).
+
+**1º** - Baixe o projeto e entre na pasta:
 
 ```powershell
 git clone https://github.com/alvarosamp/Ag02.git
 cd Ag02
 ```
 
+(Se recebeu um ZIP, extraia e abra o terminal na pasta que contém `main.py`.)
+
+**2º** - Crie o ambiente virtual:
+
 ```powershell
 python -m venv .venv
+```
+
+**3º** - Instale as dependências:
+
+```powershell
 .venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+**4º** - Execute o programa:
+
+```powershell
 .venv\Scripts\python.exe main.py
 ```
 
-No Linux/macOS, use `.venv/bin/python` nos dois últimos comandos.
-O programa treina, mostra as métricas e solicita sete inteiros para classificar um novo cliente. Não use separadores de milhares: escreva `10000`.
-Ao final, digite `s` para outra previsão; qualquer outra resposta encerra. Entradas inválidas podem ser corrigidas. Ctrl+C encerra a entrada interativa.
+**5º** - Acompanhe o resultado: o programa treina o modelo e mostra as métricas.
 
-Somente treinamento e avaliação:
+**6º** - Informe os dados de um cliente quando o programa pedir:
+
+| Campo | O que digitar |
+|---|---|
+| Region | `0` (Lisbon), `1` (Oporto), `2` (Other) ou o nome da região |
+| Fresh, Milk, Grocery, Frozen, Detergents Paper, Delicatessen | gasto anual em u.m., inteiro não negativo, sem separador de milhares (ex.: `10000`) |
+
+**7º** - Leia o canal previsto (**HoReCa** ou **Retail**) e a confiança do modelo. Um valor inválido repete só aquela pergunta. Digite `s` para classificar outro cliente. Digite `sair` (ou `Ctrl+C`) para encerrar.
+
+No Linux/macOS, troque `.venv\Scripts\python.exe` por `.venv/bin/python`.
+
+### Outras formas de executar
+
+Somente treinamento e avaliação, sem a entrada interativa:
 
 ```powershell
 .venv\Scripts\python.exe main.py --sem-interacao
 ```
 
-Previsão pela linha de comando (valores ilustrativos, sem classe verdadeira conhecida):
+Previsão direta pela linha de comando (valores ilustrativos), na ordem Region, Fresh, Milk, Grocery, Frozen, Detergents Paper, Delicatessen:
 
 ```powershell
 .venv\Scripts\python.exe main.py --prever 2 10000 5000 8000 1000 3000 1000
 ```
 
-Ordem: Region, Fresh, Milk, Grocery, Frozen, Detergents Paper, Delicatessen.
-Regiões: 0 = Lisbon, 1 = Oporto, 2 = Other. Os seis gastos são anuais em unidades monetárias.
 O resultado é uma estimativa do modelo, não uma confirmação do canal real.
 
 ## Correspondência com as nove etapas
@@ -46,14 +70,24 @@ O resultado é uma estimativa do modelo, não uma confirmação do canal real.
 3. **Conversão:** `Series.replace` e `astype('int64')`: HoReCa → 0; Retail → 1; Lisbon → 0; Oporto → 1; Other → 2. Gastos também são validados e convertidos para int64.
 4. **Ordenação:** `reindex` coloca Region e os seis gastos antes de Channel. O nome original `Detergents_Paper` é normalizado para `Detergents Paper`, conforme o enunciado.
 5. **Divisão:** `train_test_split(test_size=0.20, random_state=42, stratify=y)`: 352 amostras de treino e 88 de teste. Estratificação mantém aproximadamente a proporção das classes. Channel é retirado dos atributos.
-6. **Modelo:** `DecisionTreeClassifier(max_depth=4, min_samples_leaf=5, random_state=42)`.
+6. **Modelo:** **Decision Tree (árvore de decisão)**, com `DecisionTreeClassifier(max_depth=4, min_samples_leaf=5, random_state=42)`.
 7. **Treinamento e previsão:** `fit` somente no treino; `predict` no teste.
 8. **Avaliação:** acurácia, `classification_report`, matriz de confusão e comparação com classe majoritária.
-9. **Novas entradas:** `input` com validação e `predict`, exibindo HoReCa ou Retail. Alternativamente, use `--prever`.
+9. **Novas entradas:** `input` por campo, com validação, e `predict`, exibindo HoReCa ou Retail. Alternativamente, use `--prever`.
 
-## Justificativa e limites
+## Modelo escolhido e justificativa
 
-A árvore de decisão é um dos modelos permitidos e permite inspecionar regras em `resultados/arvore.txt`. Divide os exemplos por limiares dos atributos, escolhidos pelo critério Gini. Limitar profundidade e tamanho das folhas ajuda a reduzir sobreajuste. Os parâmetros foram fixados antes da avaliação, sem busca baseada no teste. Árvores não exigem padronização dos gastos.
+**Modelo: Decision Tree (árvore de decisão)**, uma das opções permitidas pela atividade.
+
+**Por que a árvore de decisão:**
+
+- **Interpretável:** as regras aprendidas podem ser lidas em `resultados/arvore.txt`.
+- **Critério de divisão:** separa os exemplos por limiares dos atributos, escolhidos pelo critério **Gini**.
+- **Sem padronização:** **não exige** normalizar os gastos, pois não depende da escala dos atributos.
+- **Controle de sobreajuste:** `max_depth=4` e `min_samples_leaf=5` limitam a complexidade e ajudam a evitar **sobreajuste**.
+- **Sem ajuste pelo teste:** os parâmetros foram **fixados antes da avaliação**, sem busca baseada no conjunto de teste.
+
+## Limites
 
 A codificação ordinal de Region segue a exigência da atividade, embora a região seja nominal. O conjunto é pequeno e desbalanceado (298 HoReCa e 142 Retail); por isso são apresentadas métricas por classe e baseline. A avaliação usa uma única divisão fixa, não validação cruzada. O desempenho em clientes de outra população ou período não foi verificado. Não se deve escolher parâmetros por repetidas consultas ao conjunto de teste.
 
@@ -100,12 +134,6 @@ Verificações automatizadas:
 ```powershell
 .venv\Scripts\python.exe -m unittest discover -s testes -v
 ```
-
-## Apresentação e entrega
-
-Consulte `ROTEIRO_VIDEO.md` para uma apresentação de aproximadamente 6min30s.
-O vídeo ainda precisa ser gravado pelos alunos. Incluam os nomes dos dois integrantes na identificação da entrega.
-O PDF indica entrega até **02/11/2026**, com ZIP ou repositório e vídeo. O envio e as permissões de acesso devem ser conferidos pelos integrantes nas orientações do professor. Este projeto não realiza publicação nem envio.
 
 ## Fontes e atribuição
 
